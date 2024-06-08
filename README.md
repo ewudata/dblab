@@ -17,7 +17,7 @@ a linux/docker research env.
   - can be installed by docker or composer
   - doc: https://docs.openwebui.com/
   - default port: 3000
-5 docker-compose
+5. docker-compose
   - to run multiple services, which is defined in docker-compose.yml
   - run docker-compose command in yml directory, e.g.
     ```shell
