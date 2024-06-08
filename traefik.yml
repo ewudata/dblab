@@ -1,0 +1,65 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: "dblab"
+  file:
+    directory: /config
+    watch: true
+
+api:
+  insecure: true
+  dashboard: true
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+    forwardedHeaders:
+      trustedIPs:
+        - 127.0.0.1/32
+        - 192.168.0.0/16
+        - 172.20.0.0/12
+        - 10.0.0.0/8
+  websecure:
+    address: ":443"
+    forwardedHeaders:
+      trustedIPs:
+        - 127.0.0.1/32
+        - 192.168.0.0/16
+        - 172.20.0.0/12
+        - 10.0.0.0/8
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      tlschallenge: true
+      email: danl@ewu.edu
+      storage: /acme.json
+      # caserver: "https://acme-staging-v02.api.letsencrypt.org/directory"  # debug mode
+
+tls:
+  certResolver: letsencrypt
+
+serversTransport:
+    insecureSkipVerify: true
+
+accessLog:
+  filePath: "/logs/access.log"
+  fields:
+    headers:
+      names:
+        User-Agent: keep
+        StartUTC: drop
+
+log:
+  filePath: "/logs/traefik.log"
+  level: INFO

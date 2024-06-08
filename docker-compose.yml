@@ -1,26 +1,27 @@
 ---
-version: '3'
 services:
     traefik:
-      image: traefik:v2.11
+      image: traefik:v3.0
       container_name: traefik
       restart: no
       networks:
-       - dblab
+        - dblab
       ports:
-       - "80:80"
-       - "443:443"
-       - "3306:3306"
+        - "80:80"
+        - "443:443"
+        - "3306:3306"
+        - "8080:8080"
       volumes:
-       - /var/run/docker.sock:/var/run/docker.sock:ro
-       - /etc/localtime:/etc/localtime:ro
-       - ./data/acme.json:/acme.json:rw
-       - ./data/logs:/logs:rw
-       - ./data/config:/config:ro  # dynamic config
-       - ./traefik.yml:/etc/traefik/traefik.yml:rw  # static config
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+        - /etc/localtime:/etc/localtime:ro
+        - ./data/acme.json:/acme.json:rw
+        - ./data/logs:/logs:rw
+        - ./data/config:/config:ro  # dynamic config
+        - ./traefik.yml:/etc/traefik/traefik.yml:rw  # static config
       labels:
-       - "traefik.enable=true"
-
+        - "traefik.enable=true"
+        - traefik.http.routers.traefik-https.entrypoints=websecure
+        - traefik.http.routers.traefik-https.rule=Host(`localhost`)
     whoami:
       image: traefik/whoami
       container_name: whoami
@@ -28,9 +29,10 @@ services:
       depends_on:
         - traefik
       networks:
-        - labdb
+        - dblab
       labels:
         - "traefik.enable=true"
+        - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
 
     # ollama:
     #   image: ollama/ollama:latest
