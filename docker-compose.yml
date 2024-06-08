@@ -1,0 +1,84 @@
+---
+version: '3'
+services:
+    traefik:
+      image: traefik:v2.11
+      container_name: traefik
+      restart: no
+      networks:
+       - dblab
+      ports:
+       - "80:80"
+       - "443:443"
+       - "3306:3306"
+      volumes:
+       - /var/run/docker.sock:/var/run/docker.sock:ro
+       - /etc/localtime:/etc/localtime:ro
+       - ./data/acme.json:/acme.json:rw
+       - ./data/logs:/logs:rw
+       - ./data/config:/config:ro  # dynamic config
+       - ./traefik.yml:/etc/traefik/traefik.yml:rw  # static config
+      labels:
+       - "traefik.enable=true"
+
+    whoami:
+      image: traefik/whoami
+      container_name: whoami
+      restart: unless-stopped
+      depends_on:
+        - traefik
+      networks:
+        - labdb
+      labels:
+        - "traefik.enable=true"
+
+    # ollama:
+    #   image: ollama/ollama:latest
+    #   container_name: ollama
+    #   ports:
+    #     - "11434:11434"
+    #   volumes:
+    #     - ollama:/root/.ollama
+    #   restart: unless-stopped
+    #   depends_on:
+    #     - traefik
+    #   labels:
+    #     - "traefik.enable=true"
+    #   networks:
+    #     - dblab
+    #   environment:
+    #     - OLLAMA_NUM_PARALLEL=2
+    #     - OLLAMA_MAX_LOADED_MODELS=2
+    #   tty: true
+    # open-webui:
+    #   image: ghcr.io/open-webui/open-webui:main
+    #   container_name: open-webui
+    #   depends_on:
+    #     - traefik
+    #     - ollama
+    #   labels:
+    #     - "traefik.enable=true"
+    #   ports:
+    #     - "3000:8080"
+    #   extra_hosts:
+    #     - "host.docker.internal:host-gateway"
+    #   volumes:
+    #     - open-webui:/app/backend/data
+    #   restart: unless-stopped
+    #   environment:
+    #     - 'WEBUI_NAME=DBLAB - EWU CS'
+    #   #      - 'WEBHOOK_URL='
+    #   #      - 'OLLAMA_BASE_URL=http://ollama:11434'
+    #   #      - 'WEBUI_SECRET_KEY='
+    #   networks:
+    #     - dblab
+
+volumes:
+  ollama:
+  open-webui:
+
+networks:
+  dblab:
+    driver: bridge
+    name: dblab
+...
