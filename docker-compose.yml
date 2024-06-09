@@ -3,14 +3,14 @@ services:
     traefik:
       image: traefik:v3.0
       container_name: traefik
+      command:
+        - "--log.level=DEBUG"
       restart: no
       networks:
         - dblab
       ports:
         - "80:80"
         - "443:443"
-        - "3306:3306"
-        - "8080:8080"
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock:ro
         - /etc/localtime:/etc/localtime:ro
@@ -18,10 +18,9 @@ services:
         - ./data/logs:/logs:rw
         - ./data/config:/config:ro  # dynamic config
         - ./traefik.yml:/etc/traefik/traefik.yml:rw  # static config
-      labels:
-        - "traefik.enable=true"
-        - traefik.http.routers.traefik-https.entrypoints=websecure
-        - traefik.http.routers.traefik-https.rule=Host(`localhost`)
+      # labels:
+      #   - "traefik.enable=true"
+    
     whoami:
       image: traefik/whoami
       container_name: whoami
@@ -32,52 +31,79 @@ services:
         - dblab
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+        - "traefik.http.routers.whoami.rule=PathPrefix(`/whoami`)"
+        - "traefik.http.routers.whoami.entrypoints=web"
+        - "traefik.http.services.ollama.loadbalancer.server.port=80"
+        # - "traefik.http.routers.whoami.entrypoints=websecure"
+        # - "traefik.http.routers.whoami.tls=true"
 
-    # ollama:
-    #   image: ollama/ollama:latest
-    #   container_name: ollama
-    #   ports:
-    #     - "11434:11434"
-    #   volumes:
-    #     - ollama:/root/.ollama
-    #   restart: unless-stopped
-    #   depends_on:
-    #     - traefik
-    #   labels:
-    #     - "traefik.enable=true"
-    #   networks:
-    #     - dblab
-    #   environment:
-    #     - OLLAMA_NUM_PARALLEL=2
-    #     - OLLAMA_MAX_LOADED_MODELS=2
-    #   tty: true
-    # open-webui:
-    #   image: ghcr.io/open-webui/open-webui:main
-    #   container_name: open-webui
-    #   depends_on:
-    #     - traefik
-    #     - ollama
-    #   labels:
-    #     - "traefik.enable=true"
-    #   ports:
-    #     - "3000:8080"
-    #   extra_hosts:
-    #     - "host.docker.internal:host-gateway"
-    #   volumes:
-    #     - open-webui:/app/backend/data
-    #   restart: unless-stopped
-    #   environment:
-    #     - 'WEBUI_NAME=DBLAB - EWU CS'
-    #   #      - 'WEBHOOK_URL='
-    #   #      - 'OLLAMA_BASE_URL=http://ollama:11434'
-    #   #      - 'WEBUI_SECRET_KEY='
-    #   networks:
-    #     - dblab
+    ollama:
+      image: ollama/ollama:latest
+      container_name: ollama
+      # ports:
+      #   - "11434:11434"
+      expose:
+        - "11434"
+      volumes:
+        - ollama:/root/.ollama
+      restart: unless-stopped
+      depends_on:
+        - traefik
+      networks:
+        - dblab
+      environment:
+        - OLLAMA_NUM_PARALLEL=2
+        - OLLAMA_MAX_LOADED_MODELS=2
+      tty: true
+      labels:
+        - "traefik.enable=false"
+
+    open-webui:
+      image: ghcr.io/open-webui/open-webui:main
+      container_name: open-webui
+      depends_on:
+        - traefik
+        - ollama
+      ports:
+        - "8080:8080"
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      volumes:
+        - open-webui:/app/backend/data
+      restart: unless-stopped
+      environment:
+        - 'WEBUI_NAME=DBLAB - EWU CS'
+        - 'OLLAMA_BASE_URL=http://ollama:11434'
+      #      - 'WEBHOOK_URL='
+      #      - 'WEBUI_SECRET_KEY='
+      networks:
+        - dblab
+      labels:
+        - "traefik.enable=false"
+        - "traefik.http.routers.openwebui.rule=PathPrefix(`/openwebui`)"
+        - "traefik.http.routers.openwebui.middlewares=openwebui-stripprefix"
+        - "traefik.http.middlewares.openwebui-stripprefix.stripprefix.prefixes=/openwebui"
+        - "traefik.http.routers.openwebui.entrypoints=web"
+        - "traefik.http.services.openwebui.loadbalancer.server.port=8080"
+
+  mysql:
+      image: mysql:latest
+      container_name: mysql
+      restart: unless-stopped
+      environment:
+        MYSQL_ROOT_PASSWORD: password
+        MYSQL_DATABASE: mydatabase
+      volumes:
+        - mysql-data:/var/lib/mysql
+      ports:
+        - "3306:3306"
+      networks:
+        - dblab
 
 volumes:
   ollama:
   open-webui:
+  mysql-data:
 
 networks:
   dblab:
