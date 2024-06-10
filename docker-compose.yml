@@ -86,19 +86,19 @@ services:
         - "traefik.http.routers.openwebui.entrypoints=web"
         - "traefik.http.services.openwebui.loadbalancer.server.port=8080"
 
-  mysql:
-      image: mysql:latest
-      container_name: mysql
-      restart: unless-stopped
-      environment:
-        MYSQL_ROOT_PASSWORD: password
-        MYSQL_DATABASE: mydatabase
-      volumes:
-        - mysql-data:/var/lib/mysql
-      ports:
-        - "3306:3306"
-      networks:
-        - dblab
+  # mysql:
+  #     image: mysql:latest
+  #     container_name: mysql
+  #     restart: unless-stopped
+  #     environment:
+  #       MYSQL_ROOT_PASSWORD: password
+  #       MYSQL_DATABASE: mydatabase
+  #     volumes:
+  #       - mysql-data:/var/lib/mysql
+  #     ports:
+  #       - "3306:3306"
+  #     networks:
+  #       - dblab
 
 volumes:
   ollama:
